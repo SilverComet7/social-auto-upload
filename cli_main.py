@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime
 from os.path import exists
 from pathlib import Path
+import pdb;
 
 from conf import BASE_DIR
 from uploader.douyin_uploader.main import douyin_setup, DouYinVideo
@@ -30,7 +31,7 @@ async def main():
 
     parser.add_argument("account_name", type=str, help="Account name for the platform: xiaoA")
     subparsers = parser.add_subparsers(dest="action", metavar='action', help="Choose action", required=True)
-
+    # pdb.set_trace()
     actions = get_cli_action()
     for action in actions:
         action_parser = subparsers.add_parser(action, help=f'{action} operation')

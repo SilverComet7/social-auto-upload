@@ -156,7 +156,14 @@ class DouYinVideo(object):
             await page.type(css_selector, "#" + tag)
             await page.press(css_selector, "Space")
         douyin_logger.info(f'总共添加{len(self.tags)}个话题')
-
+        # # 点开标签下拉框
+        # css_selector_mobial = ".semi-select select-lJTtRL semi-select-open semi-select-single"
+        # await page.click(css_selector_mobial)
+        
+        # # 点击游戏手柄文本
+        # await page.click('text="游戏手柄"')
+        
+        
         while True:
             # 判断重新上传按钮是否存在，如果不存在，代表视频正在上传，则等待
             try:
