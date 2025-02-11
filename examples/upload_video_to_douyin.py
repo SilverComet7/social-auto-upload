@@ -17,14 +17,16 @@ if __name__ == '__main__':
     publish_datetimes = generate_schedule_time_next_day(file_num, 1, daily_times=[16])
     cookie_setup = asyncio.run(douyin_setup(account_file, handle=False))
     for index, file in enumerate(files):
-        title, tags = get_title_and_hashtags(str(file))
+        title, tags, game = get_title_and_hashtags(str(file))
         thumbnail_path = file.with_suffix('.png')
+        
         # 打印视频文件名、标题和 hashtag
         print(f"视频文件名：{file}")
         print(f"标题：{title}")
         print(f"Hashtag：{tags}")
+        print(f"游戏：{game}")
         if thumbnail_path.exists():
-            app = DouYinVideo(title, file, tags, publish_datetimes[index], account_file, thumbnail_path=thumbnail_path)
+            app = DouYinVideo(title, file, tags, publish_datetimes[index], account_file, thumbnail_path=thumbnail_path, game=game)
         else:
-            app = DouYinVideo(title, file, tags, publish_datetimes[index], account_file)
+            app = DouYinVideo(title, file, tags, publish_datetimes[index], account_file, game=game)
         asyncio.run(app.main(), debug=False)

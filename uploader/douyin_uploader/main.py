@@ -64,7 +64,7 @@ async def douyin_cookie_gen(account_file):
 
 
 class DouYinVideo(object):
-    def __init__(self, title, file_path, tags, publish_date: datetime, account_file, thumbnail_path=None):
+    def __init__(self, title, file_path, tags, publish_date: datetime, account_file, thumbnail_path=None, game=None):
         self.title = title  # 视频标题
         self.file_path = file_path
         self.tags = tags
@@ -73,6 +73,7 @@ class DouYinVideo(object):
         self.date_format = '%Y年%m月%d日 %H:%M'
         self.local_executable_path = LOCAL_CHROME_PATH
         self.thumbnail_path = thumbnail_path
+        self.game = game  # 游戏名称
 
     async def set_schedule_time_douyin(self, page, publish_date):
         # 选择包含特定文本内容的 label 元素
@@ -155,14 +156,11 @@ class DouYinVideo(object):
         for index, tag in enumerate(self.tags, start=1):
             await page.type(css_selector, "#" + tag)
             await page.press(css_selector, "Space")
-        douyin_logger.info(f'总共添加{len(self.tags)}个话题')
-        # # 点开标签下拉框
-        # css_selector_mobial = ".semi-select select-lJTtRL semi-select-open semi-select-single"
-        # await page.click(css_selector_mobial)
-        
-        # # 点击游戏手柄文本
-        # await page.click('text="游戏手柄"')
-        
+        douyin_logger.info(f'总共添加{len(self.tags)}个话题')   
+            
+        # 如果有设置游戏名称，则进行处理
+        if self.game:
+            await self.set_game_name(page, self.game)
         
         while True:
             # 判断重新上传按钮是否存在，如果不存在，代表视频正在上传，则等待
@@ -248,6 +246,15 @@ class DouYinVideo(object):
         await page.keyboard.type(location)
         await page.wait_for_selector('div[role="listbox"] [role="option"]', timeout=5000)
         await page.locator('div[role="listbox"] [role="option"]').first.click()
+    async def set_game_name(self, page: Page, game_name: str ):
+        await page.click('text="位置"')
+        await page.click('text="游戏手柄"')
+        await page.locator('div.semi-select span:has-text("添加作品同款游戏")').click()
+        await page.keyboard.press("Backspace")
+        await page.wait_for_timeout(2000)
+        await page.keyboard.type(game_name)
+        await page.wait_for_selector('div.semi-select-option-list', timeout=20000)
+        await page.locator(f'div[role="listbox"] span:has-text("{game_name}")').first.click()
 
     async def main(self):
         async with async_playwright() as playwright:

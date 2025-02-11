@@ -34,8 +34,9 @@ def get_title_and_hashtags(filename):
     splite_str = content.strip().split("\n")
     title = splite_str[0]
     hashtags = splite_str[1].replace("#", "").split(" ")
+    game = splite_str[2] if len(splite_str) > 2 else None
 
-    return title, hashtags
+    return title, hashtags, game
 
 
 def generate_schedule_time_next_day(total_videos, videos_per_day, daily_times=None, timestamps=False, start_days=0):
