@@ -185,7 +185,7 @@ class DouYinVideo(object):
         await self.set_thumbnail(page, self.thumbnail_path)
 
         # 更换可见元素
-        await self.set_location(page, "杭州市")
+        # await self.set_location(page, "杭州市")
 
         # 頭條/西瓜
         third_part_element = '[class^="info"] > [class^="first-part"] div div.semi-switch'
@@ -254,8 +254,10 @@ class DouYinVideo(object):
         await page.wait_for_timeout(2000)
         await page.keyboard.type(game_name)
         await page.wait_for_selector('div.semi-select-option-list', timeout=20000)
+        await page.wait_for_timeout(2000)
         await page.locator(f'div[role="listbox"] span:has-text("{game_name}")').first.click()
-
+        await page.wait_for_timeout(2000)
+          
     async def main(self):
         async with async_playwright() as playwright:
             await self.upload(playwright)
