@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+import random
 
 from playwright.async_api import Playwright, async_playwright, Page
 import os
@@ -150,7 +151,7 @@ class DouYinVideo(object):
             await page.keyboard.press("Backspace")
             await page.keyboard.press("Control+KeyA")
             await page.keyboard.press("Delete")
-            await page.keyboard.type(self.title)
+            # await page.keyboard.type(self.title)
             await page.keyboard.press("Enter")
         css_selector = ".zone-container"
         for index, tag in enumerate(self.tags, start=1):
@@ -226,10 +227,10 @@ class DouYinVideo(object):
             await page.click('text="选择封面"')
             await page.wait_for_selector("div.semi-modal-content:visible")
             await page.click('text="设置竖封面"')
-            await page.wait_for_timeout(2000)  # 等待2秒
+            await random_wait(page)  # 等待2秒
             # 定位到上传区域并点击
             await page.locator("div[class^='semi-upload upload'] >> input.semi-upload-hidden-input").set_input_files(thumbnail_path)
-            await page.wait_for_timeout(2000)  # 等待2秒
+            await random_wait(page)  # 等待2秒
             await page.locator("div[class^='extractFooter'] button:visible:has-text('完成')").click()
             # finish_confirm_element = page.locator("div[class^='confirmBtn'] >> div:has-text('完成')")
             # if await finish_confirm_element.count():
@@ -242,7 +243,7 @@ class DouYinVideo(object):
         #     "div.semi-select-single").nth(0).click()
         await page.locator('div.semi-select span:has-text("输入地理位置")').click()
         await page.keyboard.press("Backspace")
-        await page.wait_for_timeout(2000)
+        await random_wait(page)
         await page.keyboard.type(location)
         await page.wait_for_selector('div[role="listbox"] [role="option"]', timeout=5000)
         await page.locator('div[role="listbox"] [role="option"]').first.click()
@@ -251,15 +252,26 @@ class DouYinVideo(object):
         await page.click('text="游戏手柄"')
         await page.locator('div.semi-select span:has-text("添加作品同款游戏")').click()
         await page.keyboard.press("Backspace")
-        await page.wait_for_timeout(2000)
+        await random_wait(page)
         await page.keyboard.type(game_name)
+        await random_wait(page)
         await page.wait_for_selector('div.semi-select-option-list', timeout=20000)
-        await page.wait_for_timeout(2000)
+        await random_wait(page)  
         await page.locator(f'div[role="listbox"] span:has-text("{game_name}")').first.click()
-        await page.wait_for_timeout(2000)
+        await random_wait(page)
           
     async def main(self):
         async with async_playwright() as playwright:
             await self.upload(playwright)
+
+
+async def random_wait(page):
+    # 生成一个2到10秒之间的随机等待时间（以毫秒为单位）
+    wait_time = random.randint(2000, 10000)
+    await page.wait_for_timeout(wait_time)  # 等待随机时间
+    print(f"等待了 {wait_time / 1000} 秒")  # 打印等待时间（可选）
+
+# 使用示例
+# await random_wait(page)
 
 
