@@ -5,6 +5,11 @@ from time import sleep
 
 import requests
 from playwright.sync_api import sync_playwright
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+
 
 from conf import BASE_DIR, XHS_SERVER
 
