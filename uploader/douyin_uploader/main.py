@@ -151,7 +151,10 @@ class DouYinVideo(object):
             await page.keyboard.press("Backspace")
             await page.keyboard.press("Control+KeyA")
             await page.keyboard.press("Delete")
-            # await page.keyboard.type(self.title)
+            # 检查环境变量控制是否输入标题
+            title_control = os.environ.get('title_control', '1')  # 默认为输入标题
+            if title_control == '1':
+                await page.keyboard.type(self.title)
             await page.keyboard.press("Enter")
         css_selector = ".zone-container"
         for index, tag in enumerate(self.tags, start=1):
@@ -160,7 +163,8 @@ class DouYinVideo(object):
         douyin_logger.info(f'总共添加{len(self.tags)}个话题')   
             
         # 如果有设置游戏名称，则进行处理
-        if self.game:
+        game_binding = os.environ.get('game_binding', '0')  # 默认为不绑定游戏
+        if self.game and game_binding == '1':
             await self.set_game_name(page, self.game)
         
         while True:
@@ -250,6 +254,7 @@ class DouYinVideo(object):
     async def set_game_name(self, page: Page, game_name: str ):
         await page.click('text="位置"')
         await page.click('text="游戏手柄"')
+        # todo 上传抖音的游戏选择支持具体的名称对齐，避免同名游戏过多导致选第一个出现问题
         await page.locator('div.semi-select span:has-text("添加作品同款游戏")').click()
         await page.keyboard.press("Backspace")
         await random_wait(page)
