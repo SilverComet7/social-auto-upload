@@ -10,8 +10,9 @@ from uploader.douyin_uploader.main import douyin_setup, DouYinVideo
 from uploader.ks_uploader.main import ks_setup, KSVideo
 from uploader.tencent_uploader.main import weixin_setup, TencentVideo
 from uploader.tk_uploader.main_chrome import tiktok_setup, TiktokVideo
+from uploader.bilibili_uploader.main import read_cookie_json_file, extract_keys_from_json, BilibiliUploader
 from utils.base_social_media import get_supported_social_media, get_cli_action, SOCIAL_MEDIA_DOUYIN, \
-    SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_KUAISHOU
+    SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_KUAISHOU, SOCIAL_MEDIA_BILIBILI
 from utils.constant import TencentZoneTypes
 from utils.files_times import get_title_and_hashtags
 
@@ -43,17 +44,26 @@ async def main():
             action_parser.add_argument("-pt", "--publish_type", type=int, choices=[0, 1],
                                        help="0 for immediate, 1 for scheduled", default=0)
             action_parser.add_argument('-t', '--schedule', help='Schedule UTC time in %Y-%m-%d %H:%M format')
+            # Bilibili specific arguments
+            action_parser.add_argument('--mission-id', type=int, help='Bilibili mission ID')
+            action_parser.add_argument('--tid', type=int, help='Bilibili video type ID (分区ID)')
+            action_parser.add_argument('--desc', type=str, help='Video description')
+            action_parser.add_argument('--topic-id', type=int, help='Bilibili topic ID')
 
     # 解析命令行参数
     args = parser.parse_args()
     # 参数校验
     if args.action == 'upload':
         if not exists(args.video_file):
-            raise FileNotFoundError(f'Could not find the video file at {args["video_file"]}')
+            raise FileNotFoundError(f'Could not find the video file at {args.video_file}')
         if args.publish_type == 1 and not args.schedule:
             parser.error("The schedule must must be specified for scheduled publishing.")
 
-    account_file = Path(BASE_DIR / "cookies" / f"{args.platform}_{args.account_name}.json")
+    # 根据平台设置 cookie 文件路径
+    if args.platform == SOCIAL_MEDIA_BILIBILI:
+        account_file = Path(BASE_DIR / "cookies" / "bilibili_uploader" / f"{args.account_name}.json")
+    else:
+        account_file = Path(BASE_DIR / "cookies" / f"{args.platform}_{args.account_name}.json")
     account_file.parent.mkdir(exist_ok=True)
 
     # 根据 action 处理不同的逻辑
@@ -81,21 +91,58 @@ async def main():
         if args.platform == SOCIAL_MEDIA_DOUYIN:
             await douyin_setup(account_file, handle=False)
             app = DouYinVideo(title, video_file, tags, publish_date, account_file, game=game)
+            await app.main()
         elif args.platform == SOCIAL_MEDIA_TIKTOK:
             await tiktok_setup(account_file, handle=True)
             app = TiktokVideo(title, video_file, tags, publish_date, account_file)
+            await app.main()
         elif args.platform == SOCIAL_MEDIA_TENCENT:
             await weixin_setup(account_file, handle=True)
             category = TencentZoneTypes.LIFESTYLE.value  # 标记原创需要否则不需要传
             app = TencentVideo(title, video_file, tags, publish_date, account_file, category)
+            await app.main()
         elif args.platform == SOCIAL_MEDIA_KUAISHOU:
             await ks_setup(account_file, handle=True)
             app = KSVideo(title, video_file, tags, publish_date, account_file)
+            await app.main()
+        elif args.platform == SOCIAL_MEDIA_BILIBILI:
+            # Bilibili upload logic
+            cookie_data = read_cookie_json_file(account_file)
+            cookie_data = extract_keys_from_json(cookie_data)
+            
+            # Get parameters
+            tid = args.tid if args.tid else 172  # Default to game zone
+            desc = args.desc if args.desc else title
+            mission_id = args.mission_id if args.mission_id else None
+            topic_id = args.topic_id if args.topic_id else None
+            
+            print(f"Uploading to Bilibili with parameters: tid={tid}, desc={desc}, mission_id={mission_id}, topic_id={topic_id}")
+            
+            # Convert tags list to string
+            
+            # Convert publish_date to timestamp if scheduled
+            dtime = None
+            if publish_date and publish_date != 0:
+                dtime = int(publish_date.timestamp())
+            
+            video_path = Path(video_file)
+            bili_uploader = BilibiliUploader(
+                cookie_data, 
+                video_path, 
+                title, 
+                desc, 
+                tid, 
+                tags, 
+                dtime,
+                mission_id,
+                topic_id
+            )
+            result = await bili_uploader.upload()
+            if not result:
+                exit(1)
         else:
             print("Wrong platform, please check your input")
             exit()
-
-        await app.main()
 
 
 if __name__ == "__main__":

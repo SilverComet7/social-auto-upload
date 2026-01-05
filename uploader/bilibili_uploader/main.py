@@ -1,6 +1,7 @@
 import json
 import pathlib
 import random
+import asyncio
 from biliup.plugins.bili_webup import BiliBili, Data
 
 from utils.log import bilibili_logger
@@ -40,7 +41,7 @@ def random_emoji():
 
 
 class BilibiliUploader(object):
-    def __init__(self, cookie_data, file: pathlib.Path, title, desc, tid, tags, dtime):
+    def __init__(self, cookie_data, file: pathlib.Path, title, desc, tid, tags, dtime,mission_id,topic_id):
         self.upload_thread_num = 3
         self.copyright = 1
         self.lines = 'AUTO'
@@ -51,6 +52,8 @@ class BilibiliUploader(object):
         self.tid = tid
         self.tags = tags
         self.dtime = dtime
+        self.mission_id = mission_id
+        self.topic_id = topic_id
         self._init_data()
 
     def _init_data(self):
@@ -61,8 +64,10 @@ class BilibiliUploader(object):
         self.data.tid = self.tid
         self.data.set_tag(self.tags)
         self.data.dtime = self.dtime
-
-    def upload(self):
+        self.data.mission_id = self.mission_id
+        self.data.topic_id = self.topic_id
+    def _upload_sync(self):
+        """同步上传方法，在单独的线程中运行以避免事件循环冲突"""
         with BiliBili(self.data) as bili:
             bili.login_by_cookies(self.cookie_data)
             bili.access_token = self.cookie_data.get('access_token')
@@ -70,10 +75,15 @@ class BilibiliUploader(object):
                                           tasks=self.upload_thread_num)  # 上传视频，默认线路AUTO自动选择，线程数量3。
             video_part['title'] = self.title
             self.data.append(video_part)
-            ret = bili.submit()  # 提交视频
+            ret = bili.submit(submit_api="web")  # 提交视频
             if ret.get('code') == 0:
                 bilibili_logger.success(f'[+] {self.file.name}上传 成功')
                 return True
             else:
                 bilibili_logger.error(f'[-] {self.file.name}上传 失败, error messge: {ret.get("message")}')
                 return False
+
+    async def upload(self):
+        """异步上传方法，使用线程执行器运行同步代码"""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._upload_sync)
